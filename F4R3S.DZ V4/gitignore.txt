@@ -1,0 +1,13 @@
+.env
+keys.json
+license.key
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+database/
+reports/
+logs/
+*.db
+.vscode/
+.idea/
