@@ -19,7 +19,6 @@ from flask_socketio import SocketIO
 from core.profiles import PROFILES, get_profile
 from core.pipeline import PipelineEngine
 from core.license_manager import LicenseManager
-from core.telegram_notifier import TelegramNotifier
 
 # ============================================================
 # Configuration
@@ -33,7 +32,6 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Initialize
 license_mgr = LicenseManager(keys_file=KEYS_FILE)
-notifier = TelegramNotifier()
 
 # ============================================================
 # LOGIN TEMPLATE (English)
@@ -228,7 +226,6 @@ def login():
 
         if not username or not key:
             error = "Please enter both username and license key"
-            notifier.notify_failed_login(username, key, "Missing credentials")
         else:
             valid, msg, days_left, customer = license_mgr.verify(key)
 
@@ -237,16 +234,12 @@ def login():
                 session['username'] = customer
                 session['client_ip'] = request.remote_addr
                 session['days_left'] = days_left
-
-                notifier.notify_login(customer, key, days_left)
                 return redirect(url_for('dashboard'))
 
             elif valid:
                 error = "Username does not match this license key"
-                notifier.notify_failed_login(username, key, "Username mismatch")
             else:
                 error = msg
-                notifier.notify_failed_login(username, key, msg)
 
     return render_template_string(LOGIN_HTML, error=error)
 
@@ -818,8 +811,6 @@ def start_scan():
         return jsonify({'error': 'Target is required'}), 400
 
     username = session.get('username', 'Guest')
-    notifier.notify_scan_started(username, target, profile_key)
-
     profile = get_profile(profile_key)
     task_id = f"scan_{int(time.time())}"
 
@@ -834,9 +825,6 @@ def start_scan():
                 results['end_time'] = str(results['end_time'])
 
             socketio.emit('pipeline_complete', {'results': results})
-
-            vulns_count = len(results.get('vulnerabilities', []))
-            notifier.notify_scan_completed(username, target, vulns_count)
         except Exception as e:
             socketio.emit('pipeline_error', {'error': str(e)})
 
