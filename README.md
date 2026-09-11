@@ -19,3 +19,6 @@ It allows scanning targets for open ports using multiple profiles.
 1. Update your system:
    ```bash
    sudo apt update && sudo apt upgrade -y
+
+Install Python, pip, and git:
+
